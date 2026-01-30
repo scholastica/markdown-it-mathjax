@@ -64,16 +64,31 @@
       }
     }
 
-    // find endMarkerPos
-    var endMarkerPos = state.src.indexOf(endMarker, startMathPos)
-    for (var i = 0; i < state.src.length; i++) {
-      var marker = state.src[i]
-      var afterMarker = state.src[ i + 1 ]
-      if (marker === endMarker && /[^\d]/.test(afterMarker) && (i + 1) > startMathPos) {
+    var endMarkerPos = -1
+    var braceDepth = 0
+
+    for (var i = startMathPos; i < state.src.length; i++) {
+      var ch = state.src[i]
+      if (ch === '{') braceDepth++
+      if (ch === '}') braceDepth--
+
+      // only consider $ when not inside braces
+      if (
+        braceDepth === 0 &&
+        state.src.slice(i, i + endMarker.length) === endMarker &&
+        i > startMathPos
+      ) {
+        // Pandoc rule: closing $ cannot be followed by a digit
+        var suffix = state.src.charCodeAt(i + endMarker.length)
+        if (endMarker.length === 1 && suffix >= 0x30 && suffix <= 0x39) {
+          continue
+        }
+
         endMarkerPos = i
         break
       }
     }
+
     if (endMarkerPos === -1) {
       return false
     }
